@@ -64,6 +64,11 @@
       autoplay: true,
       path: "main.json" // твоя анимация рядом с index.html
     });
+
+    document.getElementById("lottie").addEventListener("click", () => {
+      anim.stop();        // на всякий случай сбрасываем
+      anim.play();        // проигрываем один раз
+    });
   </script>
 </body>
 </html>
