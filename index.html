@@ -270,18 +270,25 @@
   applyTheme();
   try { tg?.onEvent('themeChanged', applyTheme); } catch(e){}
 
-  function loadLottieFixed(container, path){
-    const el = typeof container === 'string' ? document.getElementById(container) : container;
-    if(!el) return;
+  let animRegister, animBank;
+  const smallAnims = [];
+
+  function loadLottieFixed(containerId, path, autoplay = false) {
+    const el = document.getElementById(containerId);
+    if (!el) return null;
     el.innerHTML = '';
     const anim = lottie.loadAnimation({
       container: el,
       renderer: 'svg',
       loop: false,
-      autoplay: true,
+      autoplay: autoplay,
       path
     });
-    el.addEventListener('click', () => { anim.stop(); anim.play(); });
+    el.addEventListener('click', () => {
+      anim.stop();
+      anim.play();
+    });
+    return anim;
   }
 
   function populateTexts(){
@@ -318,6 +325,15 @@
   function showScene(n){
     document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
     document.getElementById('scene-' + n).classList.add('active');
+
+    // стопим все анимации
+    if (animRegister) animRegister.stop();
+    if (animBank) animBank.stop();
+    smallAnims.forEach(a => a.stop());
+
+    // запускаем только нужную
+    if (n === 1 && animRegister) animRegister.play();
+    if (n === 2 && animBank) animBank.play();
   }
 
   function buildBanks(){
@@ -339,10 +355,13 @@
       item.appendChild(span);
       list.appendChild(item);
 
-      loadLottieFixed(small.id, b.file);
+      const smallAnim = loadLottieFixed(small.id, b.file, false);
+      smallAnims.push(smallAnim);
 
       item.addEventListener('click', () => {
         item.classList.toggle('selected');
+        smallAnim.stop();
+        smallAnim.play();
       });
     });
   }
@@ -359,9 +378,11 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     populateTexts();
-    loadLottieFixed('anim-register', 'register.json');
-    loadLottieFixed('anim-bank', 'bank.json');
+    animRegister = loadLottieFixed('anim-register', 'register.json', false);
+    animBank = loadLottieFixed('anim-bank', 'bank.json', false);
     buildBanks();
+
+    showScene(1); // запускаем сцену 1 с анимацией регистрации
 
     document.getElementById('next1').addEventListener('click', () => showScene(2));
     document.getElementById('next2').addEventListener('click', () => showScene(3));
