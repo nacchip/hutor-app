@@ -10,10 +10,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 
   <style>
-    html, body {
-      user-select: none
-    }
-    
     :root{
       --bg: #ffffff;
       --card-bg: #f8f9fa;
@@ -24,6 +20,8 @@
       --button-text: #ffffff;
       --radius: 12px;
       --border: #e6e9ee;
+      --select-bg: #ffffff;
+      --select-text: #111827;
     }
 
     .tg-dark{
@@ -35,6 +33,8 @@
       --accent-opaque: rgba(47,155,240,0.12);
       --button-text:#ffffff;
       --border:#222629;
+      --select-bg:#1c1f23;
+      --select-text:#ffffff;
     }
 
     /* ensure full page background applies */
@@ -47,6 +47,11 @@
       font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
       -webkit-font-smoothing:antialiased;
       -moz-osx-font-smoothing:grayscale;
+      user-select:none; /* запрет на выделение текста */
+    }
+
+    select, option, input, button {
+      user-select:none;
     }
 
     /* center app but keep full-page background visible */
@@ -78,13 +83,19 @@
     .title { font-size:20px; font-weight:600; text-align:center; }
 
     .form { width:100%; display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+
     .input {
       border-radius:10px;
       border:1px solid var(--border);
       padding:10px;
       font-size:15px;
-      background:transparent;
-      color:var(--text);
+      background:var(--select-bg);
+      color:var(--select-text);
+    }
+
+    select.input option {
+      background:var(--select-bg);
+      color:var(--select-text);
     }
 
     .btn {
@@ -99,7 +110,6 @@
       font-size:15px;
     }
 
-    /* fixed Lottie sizes requested */
     .anim-100 { width:100px; height:100px; display:flex; justify-content:center; align-items:center; margin:6px auto 0; }
 
     /* Banks list */
@@ -110,7 +120,7 @@
       gap:10px;
       padding:6px 10px;
       border-radius:10px;
-      border:1px solid var(--border);
+      border:2px solid transparent; /* заранее заложена ширина рамки */
       cursor:pointer;
       user-select:none;
       transition:background-color .12s, border-color .12s, transform .06s;
@@ -123,7 +133,7 @@
 
     /* selected visual state */
     .bank-item.selected {
-      border:2px solid var(--accent);
+      border-color:var(--accent);
       background:var(--accent-opaque);
     }
 
@@ -154,9 +164,7 @@
         <div class="form">
           <input id="lastName" class="input" placeholder="Фамилия" />
           <input id="firstName" class="input" placeholder="Имя" />
-          <select id="classSelect" class="input">
-            <!-- placeholder option injected from JS -->
-          </select>
+          <select id="classSelect" class="input"></select>
           <button id="next1" class="btn">Далее</button>
         </div>
       </div>
@@ -174,7 +182,7 @@
       <!-- Scene 3 -->
       <div id="scene-3" class="scene card">
         <div id="title-3" class="title">Сцена 3</div>
-        <div id="placeholder" class="placeholder">Пока что пустая сцена (здесь можно добавить дальнейшие шаги)</div>
+        <div id="placeholder" class="placeholder">Пока что пустая сцена</div>
         <button id="sendData" class="btn">Отправить данные боту</button>
       </div>
 
@@ -185,7 +193,6 @@
   const tg = window.Telegram?.WebApp || null;
   try { tg?.expand(); } catch(e){}
 
-  /* ===== Localization (added classLabel) ===== */
   const TRANSLATIONS = {
     ru: {
       title1: "Регистрация",
@@ -203,7 +210,7 @@
         {file:"sbp.json", label:"Другое (по СБП)"}
       ],
       scene3Title: "Сцена 3",
-      scene3Placeholder: "Пока что пустая сцена (здесь можно добавить дальнейшие шаги)",
+      scene3Placeholder: "Пока что пустая сцена",
       sendData: "Отправить данные боту"
     },
     fr: {
@@ -222,7 +229,7 @@
         {file:"sbp.json", label:"Autre (via SBP)"}
       ],
       scene3Title: "Scène 3",
-      scene3Placeholder: "Scène vide pour l'instant (vous pouvez ajouter les étapes suivantes ici)",
+      scene3Placeholder: "Scène vide pour l'instant",
       sendData: "Envoyer les données au bot"
     },
     en: {
@@ -241,77 +248,42 @@
         {file:"sbp.json", label:"Other (via SBP)"}
       ],
       scene3Title: "Scene 3",
-      scene3Placeholder: "Empty scene for now (you can add further steps here)",
+      scene3Placeholder: "Empty scene for now",
       sendData: "Send data to bot"
     }
   };
 
   function detectLang(){
-    try {
-      const code = tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en';
-      if (code.startsWith('ru')) return 'ru';
-      if (code.startsWith('fr')) return 'fr';
-      return 'en';
-    } catch(e){
-      return 'en';
-    }
+    const code = tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en';
+    if (code.startsWith('ru')) return 'ru';
+    if (code.startsWith('fr')) return 'fr';
+    return 'en';
   }
   const LANG = detectLang();
   const L = TRANSLATIONS[LANG] || TRANSLATIONS.en;
 
-  /* ===== Theme handling (use CSS variables so full page updates) ===== */
   function applyTheme(){
-    // apply css class for dark/light to root element
     const scheme = tg?.colorScheme || 'light';
     if (scheme === 'dark') document.documentElement.classList.add('tg-dark');
     else document.documentElement.classList.remove('tg-dark');
-
-    // apply themeParams to css variables when provided
-    const p = tg?.themeParams || {};
-    if (p.bg_color) document.documentElement.style.setProperty('--bg', p.bg_color);
-    if (p.secondary_bg_color) document.documentElement.style.setProperty('--card-bg', p.secondary_bg_color);
-    if (p.text_color) document.documentElement.style.setProperty('--text', p.text_color);
-    if (p.hint_color) document.documentElement.style.setProperty('--muted', p.hint_color);
-    if (p.button_color) document.documentElement.style.setProperty('--accent', p.button_color);
-    if (p.button_text_color) document.documentElement.style.setProperty('--button-text', p.button_text_color);
-    // compute accent-opaque for subtle selected background (fallback if CSS variable not set)
-    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2f8de4';
-    document.documentElement.style.setProperty('--accent-opaque', hexToRgba(accent, 0.12));
-  }
-  function hexToRgba(hex, a){
-    try {
-      hex = hex.replace('#','').trim();
-      if (hex.length===3) hex = hex.split('').map(c=>c+c).join('');
-      const r = parseInt(hex.slice(0,2),16);
-      const g = parseInt(hex.slice(2,4),16);
-      const b = parseInt(hex.slice(4,6),16);
-      return `rgba(${r},${g},${b},${a})`;
-    } catch(e){ return `rgba(47,141,228,${a})`; }
   }
   applyTheme();
   try { tg?.onEvent('themeChanged', applyTheme); } catch(e){}
 
-  /* ===== Lottie loader (fixed-size behavior like example) ===== */
-  function loadLottieFixed(container, path, opts = {}){
-    // container: element or id
-    const el = (typeof container === 'string') ? document.getElementById(container) : container;
-    if(!el) return null;
+  function loadLottieFixed(container, path){
+    const el = typeof container === 'string' ? document.getElementById(container) : container;
+    if(!el) return;
     el.innerHTML = '';
-    const animation = lottie.loadAnimation({
+    const anim = lottie.loadAnimation({
       container: el,
       renderer: 'svg',
-      loop: opts.loop ?? false,
-      autoplay: opts.autoplay ?? true,
-      path: path
+      loop: false,
+      autoplay: true,
+      path
     });
-    // restart on click (like your example)
-    el.addEventListener('click', () => {
-      try { animation.stop(); animation.play(); } catch(e){}
-    });
-    return animation;
+    el.addEventListener('click', () => { anim.stop(); anim.play(); });
   }
 
-  /* ===== Populate UI texts and class select placeholder ===== */
   function populateTexts(){
     document.getElementById('title-1').textContent = L.title1;
     document.getElementById('title-2').textContent = L.bankPrompt;
@@ -323,7 +295,6 @@
     document.getElementById('lastName').placeholder = L.lastName;
     document.getElementById('firstName').placeholder = L.firstName;
 
-    // class select: first add translated placeholder (disabled)
     const sel = document.getElementById('classSelect');
     sel.innerHTML = '';
     const placeholder = document.createElement('option');
@@ -344,27 +315,22 @@
     }
   }
 
-  /* ===== Scenes control ===== */
   function showScene(n){
     document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
-    const el = document.getElementById('scene-' + n);
-    if (el) el.classList.add('active');
+    document.getElementById('scene-' + n).classList.add('active');
   }
 
-  /* ===== Banks list with selectable outline (toggle) ===== */
   function buildBanks(){
     const list = document.getElementById('banksList');
     list.innerHTML = '';
-    L.banks.forEach((b, idx) => {
+    L.banks.forEach((b, i) => {
       const item = document.createElement('div');
       item.className = 'bank-item';
-      item.setAttribute('role','button');
       item.setAttribute('data-bank', b.label);
-      // small lottie holder
+
       const small = document.createElement('div');
       small.className = 'lottie-small';
-      small.id = `bank-lottie-${idx}`;
-      // label
+      small.id = `bank-${i}`;
       const span = document.createElement('div');
       span.className = 'label';
       span.textContent = b.label;
@@ -373,53 +339,36 @@
       item.appendChild(span);
       list.appendChild(item);
 
-      // load small lottie: keep fixed size, loop = false (like example)
-      loadLottieFixed(small.id, b.file, { loop: false, autoplay: true });
+      loadLottieFixed(small.id, b.file);
 
-      // toggle selection on click
-      item.addEventListener('click', (e) => {
-        // toggle selected class
-        const sel = item.classList.contains('selected');
-        if (sel) item.classList.remove('selected');
-        else item.classList.add('selected');
+      item.addEventListener('click', () => {
+        item.classList.toggle('selected');
       });
     });
   }
 
-  /* ===== Collect data and send ===== */
   function collectData(){
-    const banks = Array.from(document.querySelectorAll('.bank-item.selected')).map(it => it.getAttribute('data-bank'));
     return {
-      lastName: document.getElementById('lastName').value || null,
-      firstName: document.getElementById('firstName').value || null,
-      class: document.getElementById('classSelect').value || null,
-      banks,
+      lastName: document.getElementById('lastName').value,
+      firstName: document.getElementById('firstName').value,
+      class: document.getElementById('classSelect').value,
+      banks: Array.from(document.querySelectorAll('.bank-item.selected')).map(x=>x.getAttribute('data-bank')),
       lang: LANG
     };
   }
 
-  /* ===== Init on DOM ready ===== */
   document.addEventListener('DOMContentLoaded', () => {
     populateTexts();
-
-    // load main lotties at fixed 100x100
-    loadLottieFixed('anim-register', 'register.json', { loop: false, autoplay: true });
-    loadLottieFixed('anim-bank', 'bank.json', { loop: false, autoplay: true });
-
+    loadLottieFixed('anim-register', 'register.json');
+    loadLottieFixed('anim-bank', 'bank.json');
     buildBanks();
 
-    // buttons
     document.getElementById('next1').addEventListener('click', () => showScene(2));
     document.getElementById('next2').addEventListener('click', () => showScene(3));
-
     document.getElementById('sendData').addEventListener('click', () => {
       const payload = collectData();
-      if (tg && typeof tg.sendData === 'function') {
-        tg.sendData(JSON.stringify(payload));
-      } else {
-        // for testing outside Telegram
-        alert(JSON.stringify(payload, null, 2));
-      }
+      if (tg?.sendData) tg.sendData(JSON.stringify(payload));
+      else alert(JSON.stringify(payload, null, 2));
     });
   });
 </script>
