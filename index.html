@@ -3,73 +3,360 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hutor WebApp</title>
+  <title>Telegram WebApp — Registration</title>
+
+  <!-- Telegram WebApp API -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Lottie (как в твоем примере) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+
   <style>
+    :root {
+      --bg: #ffffff;
+      --card-bg: #f8f9fa;
+      --text: #111827;
+      --muted: #6b7280;
+      --accent: #2f8de4;
+      --button-text: #ffffff;
+      --radius: 12px;
+      --border: #e6e9ee;
+    }
+
+    .tg-dark {
+      --bg:#14171a;
+      --card-bg:#1e2226;
+      --text:#e6edf3;
+      --muted:#94a3b8;
+      --accent:#2f9bf0;
+      --button-text:#ffffff;
+      --border:#2a2f35;
+    }
+
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      font-family: "Inter", sans-serif;
-      transition: background-color 0.3s, color 0.3s;
-      user-select: none;
+      margin:0;
+      padding:0;
+      height:100%;
+      font-family: "Inter", "Segoe UI", sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
     }
 
-    #lottie {
-      width: 250px;
-      height: 250px;
+    .app {
+      max-width:420px;
+      width:100%;
+      margin-top:30px;
+      padding:20px;
     }
 
-    #title {
-      margin-top: 30px;
-      font-size: 32px;
-      font-weight: 600;
-      text-align: center;
+    .card {
+      background:var(--card-bg);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:20px;
+      text-align:center;
     }
+
+    .scene { display:none; flex-direction:column; align-items:center; gap:14px; }
+    .scene.active { display:flex; }
+
+    .title {
+      font-size:20px;
+      font-weight:600;
+      margin-top:10px;
+    }
+
+    .form {
+      margin-top:10px;
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .input {
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:10px 12px;
+      font-size:15px;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .btn {
+      background:var(--accent);
+      color:var(--button-text);
+      border:none;
+      border-radius:8px;
+      padding:10px;
+      font-size:15px;
+      font-weight:600;
+      cursor:pointer;
+      width:100%;
+    }
+
+    .btn:active { transform:translateY(1px); }
+
+    /* --- Lottie container sizes --- */
+    .anim-100 {
+      width:100px;
+      height:100px;
+    }
+
+    .bank-list {
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .bank-item {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:6px 10px;
+      cursor:pointer;
+    }
+
+    .bank-item input {
+      display:none;
+    }
+
+    .bank-item .lottie-small {
+      width:26px;
+      height:26px;
+      flex:0 0 26px;
+    }
+
+    .placeholder {
+      color:var(--muted);
+      border:1px dashed var(--border);
+      border-radius:8px;
+      padding:20px;
+      width:100%;
+      text-align:center;
+      margin-top:10px;
+    }
+
   </style>
 </head>
 <body>
-  <div id="lottie"></div>
-  <div id="title"></div>
+<div class="app">
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand(); // развернуть WebApp на весь экран
+  <!-- Scene 1: Registration -->
+  <div id="scene-1" class="scene active card">
+    <div id="anim-register" class="anim-100"></div>
+    <div id="title-1" class="title">Регистрация</div>
+    <div class="form">
+      <input id="lastName" class="input" placeholder="Фамилия" />
+      <input id="firstName" class="input" placeholder="Имя" />
+      <select id="classSelect" class="input">
+        <option disabled selected>Класс →</option>
+      </select>
+      <button id="next1" class="btn">Далее</button>
+    </div>
+  </div>
 
-    // --- Тема Telegram ---
-    function applyTheme() {
-      document.body.style.backgroundColor = tg.themeParams.bg_color || "#ffffff";
-      document.body.style.color = tg.themeParams.text_color || "#000000";
+  <!-- Scene 2: Banks -->
+  <div id="scene-2" class="scene card">
+    <div id="anim-bank" class="anim-100"></div>
+    <div id="title-2" class="title">Пожалуйста, выберите банки, которыми вы пользуетесь</div>
+    <div id="banksList" class="bank-list"></div>
+    <button id="next2" class="btn">Далее</button>
+  </div>
+
+  <!-- Scene 3: Empty -->
+  <div id="scene-3" class="scene card">
+    <div id="title-3" class="title">Сцена 3</div>
+    <div id="placeholder" class="placeholder">Пока что пустая сцена (здесь можно добавить дальнейшие шаги)</div>
+    <button id="sendData" class="btn">Отправить данные боту</button>
+  </div>
+
+</div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+
+  /* --- Localization --- */
+  const TRANSLATIONS = {
+    ru: {
+      title1: "Регистрация",
+      lastName: "Фамилия",
+      firstName: "Имя",
+      classLabel: "Класс",
+      next: "Далее",
+      bankPrompt: "Пожалуйста, выберите банки, которыми вы пользуетесь",
+      banks: [
+        {file:"sber.json", label:"Сбербанк"},
+        {file:"tbank.json", label:"Т-Банк"},
+        {file:"alfa.json", label:"Альфа-Банк"},
+        {file:"qiwi.json", label:"QIWI"},
+        {file:"yoomoney.json", label:"ЮMoney"},
+        {file:"sbp.json", label:"Другое (по СБП)"}
+      ],
+      scene3Title: "Сцена 3",
+      scene3Placeholder: "Пока что пустая сцена (здесь можно добавить дальнейшие шаги)",
+      sendData: "Отправить данные боту"
+    },
+    fr: {
+      title1: "Inscription",
+      lastName: "Nom de famille",
+      firstName: "Prénom",
+      classLabel: "Classe",
+      next: "Suivant",
+      bankPrompt: "Veuillez sélectionner les banques que vous utilisez",
+      banks: [
+        {file:"sber.json", label:"Sberbank"},
+        {file:"tbank.json", label:"T-Bank"},
+        {file:"alfa.json", label:"Alfa-Bank"},
+        {file:"qiwi.json", label:"QIWI"},
+        {file:"yoomoney.json", label:"YooMoney"},
+        {file:"sbp.json", label:"Autre (via SBP)"}
+      ],
+      scene3Title: "Scène 3",
+      scene3Placeholder: "Scène vide pour l'instant",
+      sendData: "Envoyer les données au bot"
+    },
+    en: {
+      title1: "Registration",
+      lastName: "Last name",
+      firstName: "First name",
+      classLabel: "Class",
+      next: "Next",
+      bankPrompt: "Please select the banks you use",
+      banks: [
+        {file:"sber.json", label:"Sberbank"},
+        {file:"tbank.json", label:"T-Bank"},
+        {file:"alfa.json", label:"Alfa-Bank"},
+        {file:"qiwi.json", label:"QIWI"},
+        {file:"yoomoney.json", label:"YooMoney"},
+        {file:"sbp.json", label:"Other (via SBP)"}
+      ],
+      scene3Title: "Scene 3",
+      scene3Placeholder: "Empty scene for now",
+      sendData: "Send data to bot"
     }
+  };
 
-    applyTheme();
+  function detectLang() {
+    const code = tg?.initDataUnsafe?.user?.language_code || navigator.language || 'en';
+    if (code.startsWith('ru')) return 'ru';
+    if (code.startsWith('fr')) return 'fr';
+    return 'en';
+  }
+  const LANG = detectLang();
+  const L = TRANSLATIONS[LANG] || TRANSLATIONS.en;
 
-    tg.onEvent('themeChanged', applyTheme);
+  /* --- Apply Telegram Theme --- */
+  function applyTheme() {
+    const scheme = tg.colorScheme;
+    if (scheme === 'dark') document.body.classList.add('tg-dark');
+    else document.body.classList.remove('tg-dark');
 
-    // --- Язык ---
-    const lang = tg.initDataUnsafe?.user?.language_code || navigator.language || "en";
-    const textEl = document.getElementById("title");
-    textEl.textContent = lang.startsWith("ru") ? "Скоро тут будет ХУТОРЪ PAY!" : "There will be HUTORЪ PAY soon!";
+    const p = tg.themeParams || {};
+    if (p.bg_color) document.body.style.backgroundColor = p.bg_color;
+    if (p.text_color) document.body.style.color = p.text_color;
+  }
+  applyTheme();
+  tg.onEvent('themeChanged', applyTheme);
 
-    // --- Lottie анимация ---
+  /* --- Lottie loader (как в твоем примере) --- */
+  function loadLottieFixed(containerId, path) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = "";
     const anim = lottie.loadAnimation({
-      container: document.getElementById("lottie"),
+      container: el,
       renderer: "svg",
       loop: false,
       autoplay: true,
-      path: "main.json" // твоя анимация рядом с index.html
+      path: path
     });
+    el.addEventListener("click", () => {
+      anim.stop();
+      anim.play();
+    });
+    return anim;
+  }
 
-    document.getElementById("lottie").addEventListener("click", () => {
-      anim.stop();        // на всякий случай сбрасываем
-      anim.play();        // проигрываем один раз
+  /* --- Populate Texts --- */
+  function fillTexts() {
+    document.getElementById("title-1").textContent = L.title1;
+    document.getElementById("title-2").textContent = L.bankPrompt;
+    document.getElementById("title-3").textContent = L.scene3Title;
+    document.getElementById("placeholder").textContent = L.scene3Placeholder;
+    document.getElementById("next1").textContent = L.next;
+    document.getElementById("next2").textContent = L.next;
+    document.getElementById("sendData").textContent = L.sendData;
+    document.getElementById("lastName").placeholder = L.lastName;
+    document.getElementById("firstName").placeholder = L.firstName;
+    const sel = document.getElementById("classSelect");
+    const letters = ["А","Б","В"];
+    for (let i=1;i<=11;i++){
+      for (let j of letters){
+        const o=document.createElement("option");
+        o.value=`${i}${j}`;
+        o.text=`${i}${j}`;
+        sel.appendChild(o);
+      }
+    }
+  }
+
+  /* --- Scenes --- */
+  function showScene(n){
+    document.querySelectorAll(".scene").forEach(s=>s.classList.remove("active"));
+    document.getElementById("scene-"+n).classList.add("active");
+  }
+
+  /* --- Banks --- */
+  function buildBanks() {
+    const list = document.getElementById("banksList");
+    L.banks.forEach((b,i)=>{
+      const item=document.createElement("label");
+      item.className="bank-item";
+      const small=document.createElement("div");
+      small.className="lottie-small";
+      small.id="bank-lottie-"+i;
+      const input=document.createElement("input");
+      input.type="checkbox";
+      input.id="bank-"+i;
+      const span=document.createElement("span");
+      span.textContent=b.label;
+      item.appendChild(small);
+      item.appendChild(input);
+      item.appendChild(span);
+      item.addEventListener("click",()=>input.checked=!input.checked);
+      list.appendChild(item);
+      loadLottieFixed(small.id, b.file);
     });
-  </script>
+  }
+
+  /* --- Init --- */
+  document.addEventListener("DOMContentLoaded",()=>{
+    fillTexts();
+    loadLottieFixed("anim-register","register.json");
+    loadLottieFixed("anim-bank","bank.json");
+    buildBanks();
+
+    document.getElementById("next1").addEventListener("click",()=>showScene(2));
+    document.getElementById("next2").addEventListener("click",()=>showScene(3));
+    document.getElementById("sendData").addEventListener("click",()=>{
+      const data={
+        lastName:document.getElementById("lastName").value,
+        firstName:document.getElementById("firstName").value,
+        class:document.getElementById("classSelect").value,
+        banks:Array.from(document.querySelectorAll("#banksList input:checked")).map(i=>i.nextSibling.textContent),
+        lang:LANG
+      };
+      if (tg?.sendData) tg.sendData(JSON.stringify(data));
+      else alert(JSON.stringify(data,null,2));
+    });
+  });
+</script>
 </body>
 </html>
